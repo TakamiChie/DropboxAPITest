@@ -13,6 +13,7 @@ $setting = json_decode(file_get_contents(FILE_SETTING), TRUE);
 $fp = fopen(FILE_CURSOR, "c+");
 sendWebhook("Create Process At " . getmypid() , "Dropbox Test\n", ":hand:");
 if(flock($fp, LOCK_EX)){
+  sendWebhook("Locked At " . getmypid() , "Dropbox Test\n", ":hand:");
 
   // 読み込み
   $cursor = array();
@@ -21,6 +22,7 @@ if(flock($fp, LOCK_EX)){
     $cursor = json_decode(fread($fp, filesize(FILE_CURSOR)), TRUE);
     if(!empty($cursor["cursor"])){
       $c = $cursor["cursor"];
+      sendWebhook("Use Cursor($c) At" . getmypid() , "Dropbox Test\n", ":hand:");
     }
   }
 
