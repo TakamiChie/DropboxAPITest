@@ -2,27 +2,36 @@
 $dropbox = null;
 
 define("FILE_SETTING", __DIR__ . "/dropbox.conf");
+define("FILE_CURSOR", __DIR__ . "/cursor.conf");
 
 if(isset($_GET['challenge'])){
   echo htmlspecialchars($_GET['challenge']);
 }
 
 require_once(__DIR__ . '/vendor/autoload.php');
-
-$fp = fopen(FILE_SETTING, "c+");
+$setting = json_decode(file_get_contents(FILE_SETTING), TRUE);
+$fp = fopen(FILE_CURSOR, "c+");
+sendWebhook("Create Process At " . getmypid() , "Dropbox Test\n", ":hand:");
 if(flock($fp, LOCK_EX)){
 
   // 読み込み
-  $setting = json_decode(fread($fp, filesize(FILE_SETTING)), TRUE);
+  $cursor = array();
+  $c = null;
+  if(filesize(FILE_CURSOR) > 0){
+    $cursor = json_decode(fread($fp, filesize(FILE_CURSOR)), TRUE);
+    if(!empty($cursor["cursor"])){
+      $c = $cursor["cursor"];
+    }
+  }
 
   try{
     $dropbox = new \Dropbox\Client($setting["token"], "Dropbox Test");
-    $cursor = !empty($setting["cursor"]) ? $setting["cursor"] : null;
-    $cursor = loadOfDelta($cursor);
-    $setting["cursor"] = $cursor;
+    $c = loadOfDelta($c);
+    $cursor["cursor"] = $c;
     // 書き込み
     ftruncate($fp, 0);
-    fwrite($fp, json_encode($setting));
+    fseek($fp, 0);
+    fwrite($fp, json_encode($cursor));
     fclose($fp);
   }catch(Exception $e){
     sendWebhook($e->getMessage(), "Dropbox Test\n", ":no_entry_sign:");
