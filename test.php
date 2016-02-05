@@ -56,6 +56,7 @@ function loadOfDelta($cursor){
           $numAdds++;
       }
   }
+  sleep(9);
   $str .= "Num Adds: $numAdds\n";
   $str .= "Num Removes: $numRemoves\n";
   $str .= "Has More: ".$deltaPage["has_more"]."\n";
