@@ -9,16 +9,26 @@ if(isset($_GET['challenge'])){
 
 require_once(__DIR__ . '/vendor/autoload.php');
 
-$setting = json_decode(file_get_contents(FILE_SETTING), TRUE);
+$fp = fopen(FILE_SETTING, "c+");
+if(flock($fp, LOCK_EX)){
 
-try{
-  $dropbox = new \Dropbox\Client($setting["token"], "Dropbox Test");
-  $cursor = !empty($setting["cursor"]) ? $setting["cursor"] : null;
-  $cursor = loadOfDelta($cursor);
-  $setting["cursor"] = $cursor;
-  file_put_contents(FILE_SETTING, json_encode($setting));
-}catch(Exception $e){
-  sendWebhook($e->getMessage(), "Dropbox Test\n", ":no_entry_sign:");
+  // 読み込み
+  $setting = json_decode(fread($fp, filesize(FILE_SETTING)), TRUE);
+
+  try{
+    $dropbox = new \Dropbox\Client($setting["token"], "Dropbox Test");
+    $cursor = !empty($setting["cursor"]) ? $setting["cursor"] : null;
+    $cursor = loadOfDelta($cursor);
+    $setting["cursor"] = $cursor;
+    // 書き込み
+    ftruncate($fp, 0);
+    fwrite($fp, json_encode($setting));
+    fclose($fp);
+  }catch(Exception $e){
+    sendWebhook($e->getMessage(), "Dropbox Test\n", ":no_entry_sign:");
+  }
+}else{
+  sendWebhook("File Lock Failed", "Dropbox Test\n", ":no_entry_sign:");
 }
 
 function loadOfDelta($cursor){
